@@ -14,8 +14,8 @@ pub fn Deque(comptime T: type) type {
 
         elements: []T,
 
-        head: i64,
-        tail: i64,
+        head: usize,
+        tail: usize,
 
         allocator: *std.mem.Allocator,
 
@@ -27,12 +27,12 @@ pub fn Deque(comptime T: type) type {
                 .allocator = allocator,
 
                 .head = 0,
-                .tail = @intCast(i64, elements.len - 1),
+                .tail = elements.len - 1,
             };
         }
 
         pub fn pushFront(self: *Self, elt: T) !void {
-            self.elements[@intCast(usize, self.head)] = elt;
+            self.elements[self.head] = elt;
             self.head = self.inc(self.head);
             try self.maybeGrow();
         }
@@ -43,11 +43,11 @@ pub fn Deque(comptime T: type) type {
             }
 
             self.head = self.dec(self.head);
-            return self.elements[@intCast(usize, self.head)];
+            return self.elements[self.head];
         }
 
         pub fn pushBack(self: *Self, elt: T) !void {
-            self.elements[@intCast(usize, self.tail)] = elt;
+            self.elements[self.tail] = elt;
             self.tail = self.dec(self.tail);
             try self.maybeGrow();
         }
@@ -58,7 +58,7 @@ pub fn Deque(comptime T: type) type {
             }
 
             self.tail = self.inc(self.tail);
-            return self.elements[@intCast(usize, self.tail)];
+            return self.elements[self.tail];
         }
 
         pub fn isEmpty(self: *Self) bool {
@@ -75,8 +75,8 @@ pub fn Deque(comptime T: type) type {
                 var idx = self.head;
                 var new_idx: usize = 0;
                 while (true) {
-                    new_elements[new_idx] = self.elements[@intCast(usize, idx)];
-                    idx = (idx + 1) & ~@intCast(i64, self.elements.len);
+                    new_elements[new_idx] = self.elements[idx];
+                    idx = (idx + 1) & ~self.elements.len;
                     new_idx += 1;
 
                     if (idx == self.head) {
@@ -86,19 +86,19 @@ pub fn Deque(comptime T: type) type {
 
                 var old_elements = self.elements;
                 self.elements = new_elements;
-                self.head = @intCast(i64, old_elements.len);
-                self.tail = @intCast(i64, new_elements.len - 1);
+                self.head = old_elements.len;
+                self.tail = new_elements.len - 1;
 
                 self.allocator.free(old_elements);
             }
         }
 
-        fn inc(self: *Self, n: i64) i64 {
-            return (n + 1) & ~@intCast(i64, self.elements.len);
+        fn inc(self: *Self, n: usize) usize {
+            return (n + 1) & ~self.elements.len;
         }
 
-        fn dec(self: *Self, n: i64) i64 {
-            return ((n - 1) + @intCast(i64, self.elements.len)) & ~@intCast(i64, self.elements.len);
+        fn dec(self: *Self, n: usize) usize {
+            return (n + self.elements.len - 1) & ~self.elements.len;
         }
 
         pub fn deinit(self: *Self) void {
